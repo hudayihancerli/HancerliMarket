@@ -1,0 +1,191 @@
+﻿@page "/Basket"
+@using HancerliMarket.DataModels.Helper
+@using Newtonsoft.Json
+
+@inject ProductClient _productClient
+@inject BasketClient _basketClient
+@inject ILocalStorageService _localStorage
+@inject IToastService _toast
+@inject NavigationManager _navigation
+<PageTitle>Sepetim</PageTitle>
+
+@if (isLogin)
+{
+
+<RadzenTextBox @ref="BarcodeTextBoxRef" ValueChanged=@(async (args) => {await OnChange(args); args = string.Empty;}) class="w-100" Style="height:80px" Trim=true MaxLength="13" aria-label="Barkod Kodunu Giriniz." />
+
+<div class="d-flex justify-content-between align-items-center gap-2">
+    <h1 style="height:80px" class="m-3 p-4 fs-1 bg-success text-light">Toplam tutar: ₺ <b> @CountPrice</b></h1>
+    <RadzenButton Text="Temizle" class="bg-danger" Style="width: 20%;height:80px" Click="(() => ProductClear())" />
+</div>
+
+<RadzenDataList AllowVirtualization=false Style="height:500px;overflow:auto;"
+                WrapItems="false" AllowPaging="false"
+                Data="@BasketList" TItem="BasketModel" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="false">
+    <Template Context="product">
+        <RadzenCard Style="width: 100%; padding: 0;">
+            <RadzenRow Gap="0">
+                <RadzenColumn Size="12" SizeLG="3" Class="rz-p-4 product-title d-flex align-items-center">
+                    <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H3" class="rz-color-secondary">@(product.Barcode)</RadzenText>
+                </RadzenColumn>
+                <RadzenColumn class="rz-p-4 ">
+                    <RadzenColumn Size="12" SizeMD="6" SizeLG="2" Class=" align-items-center">
+                        <RadzenText class="fs-3" TextStyle="TextStyle.Body1">@(product.Name)</RadzenText>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" SizeLG="1" Class="rz-text-align-start rz-text-align-lg-end text-center align-items-center">
+                        <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Shade="Shade.Lighter" class="price-badge fs-1" Text=@($"{String.Format(new System.Globalization.CultureInfo("tr-TR"), "{0:C}", product.Price)}") />
+                    </RadzenColumn>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeLG="2" Class="rz-p-4 d-flex align-items-center">
+                    <RadzenButton Text="Sil" Click=@(() => ProductRemove(product.Id)) Style="width: 100%; height:80px" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenCard>
+    </Template>
+</RadzenDataList>
+}
+
+<style>
+    .product-title {
+        min-height: 72px;
+        background-color: var(--rz-secondary-lighter);
+    }
+
+    .price-badge {
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 20px;
+        padding: 8px;
+    }
+</style>
+
+
+@code {
+    RadzenTextBox? BarcodeTextBoxRef;
+
+    List<BasketModel> BasketList = new();
+
+    private double CountPrice = 0.0;
+    private string Barcode = string.Empty;
+    private string jwt= string.Empty;
+    private bool isLogin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        jwt = await _localStorage.GetItemAsync<string>("jwt");
+
+        isLogin = Helper.isLogin(jwt);
+
+        if (!isLogin)
+        {
+            _toast.ShowError("Lütfen Giriş Yapınız :)");
+            _navigation.NavigateTo("/");
+            return;
+        }
+
+        var basketData = await _basketClient.GetAllProduct(jwt);
+
+       if (!basketData.Status)
+       {
+           _toast.ShowWarning(basketData.Message);
+           return;
+       }
+
+       var basketList = JsonConvert.DeserializeObject<List<BasketModel>>(basketData.Data);
+       if (basketList is null || !basketList.Any())
+       {
+           return;
+       }
+
+       BasketList.AddRange(basketList);
+
+       PriceCalculate();
+    }
+
+    async Task OnChange(string barcode)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(barcode))
+            {
+                return;
+            }
+
+            var newProduct = await _productClient.GetDetailProduct(barcode, jwt);
+
+
+            if (!newProduct.Status)
+            {
+                _toast.ShowWarning(newProduct.Message);
+                return;
+            }
+
+            var basket = JsonConvert.DeserializeObject<BasketModel>(newProduct.Data);
+            if (basket is null)
+            {
+                return;
+            }
+
+            var newBasketModel = new BasketModel()
+                {
+                    Id = basket.Id,
+                    Guid = Guid.NewGuid(),
+                    Barcode = basket.Barcode,
+                    Name = basket.Name,
+                    Price = basket.Price,
+                };
+
+            BasketList.Add(newBasketModel);
+            await _basketClient.CreateProduct(newBasketModel, jwt);
+
+            PriceCalculate();
+            BarcodeTextBoxRef?.FocusAsync();
+        }
+        catch (Exception ex)
+        {
+            _toast.ShowError("Ürün bulunamadı.");
+            Console.WriteLine(ex.ToString());
+        }
+
+        Barcode = string.Empty;
+        BarcodeTextBoxRef.Value = string.Empty;
+        BarcodeTextBoxRef?.FocusAsync();
+    }
+
+    private void PriceCalculate()
+    {
+        CountPrice = 0;
+
+        var allProduct = BasketList;
+
+        //if (allProduct.Count() == 0)
+        //{
+        //   allProduct = await _basketClient.GetAllProduct();
+        //}
+
+        foreach (var item in allProduct)
+        {
+            CountPrice += item.Price;
+        }
+    }
+
+   private async Task ProductRemove(int id)
+    {
+        var removeProduct = BasketList.FirstOrDefault(x => x.Id == id);
+        if (removeProduct is null)
+        {
+            _toast.ShowWarning("Ürün silinemedi.");
+            return;
+        }
+        BasketList.Remove(removeProduct);
+        await _basketClient.DeleteProduct(removeProduct.Id, jwt);
+        PriceCalculate();
+    }
+
+    async Task ProductClear()
+    {
+        BasketList.Clear();
+        await _basketClient.RemoveProduct(jwt);
+        CountPrice = 0;
+    }
+}

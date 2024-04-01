@@ -1,0 +1,38 @@
+﻿@using HancerliMarket.DataModels
+@inherits LayoutComponentBase
+
+@inject ILocalStorageService _localStorage
+@inject NavigationManager _navigation
+
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                Timeout="10"
+                IconType="IconType.FontAwesome"
+                SuccessClass="success-toast-override"
+                SuccessIcon="fa fa-thumbs-up"
+                ErrorIcon="fa fa-bug" />
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+    <main>
+        <div class="top-row px-4">
+            <RadzenButton Text="Çıkış yap" class="rz-color-white m-3" Click="LogOut" ButtonStyle="ButtonStyle.Danger">
+                   
+                </RadzenButton>
+        </div>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code{
+
+    private async Task LogOut()
+    {
+        await _localStorage.ClearAsync();
+        //Global.tokenModel = null!;
+        _navigation.NavigateTo("/");
+    }
+}

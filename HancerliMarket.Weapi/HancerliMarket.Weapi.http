@@ -1,0 +1,6 @@
+@HancerliMarket.Webapi_HostAddress = http://localhost:5010
+
+GET {{HancerliMarket.Webapi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

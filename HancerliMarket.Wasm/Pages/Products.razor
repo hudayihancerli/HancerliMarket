@@ -1,0 +1,268 @@
+﻿@page "/Products"
+@using HancerliMarket.DataModels.Helper
+@using Newtonsoft.Json
+@inject ProductClient _productClient
+@inject ILocalStorageService _localStorage
+@inject IToastService _toast
+@inject NavigationManager _navigation
+
+@if (isLogin)
+{
+    
+<div class="overflow-hidden">
+<RadzenStack Orientation="Orientation.Horizontal"
+             AlignItems="AlignItems.Center"
+             Gap="10px"
+             class="mt-2 mb-4 ">
+
+    <RadzenButton ButtonStyle="ButtonStyle.Success"
+                  Icon="add_circle_outline"
+                  Text="Yeni Ürün Ekle"
+                  style="height:80px"
+                  Click="@InsertRow"
+                  Disabled="@(editMode == DataGridEditMode.Single && productsToInsert.Count() > 0)" />
+</RadzenStack>
+    
+<RadzenDataGrid @ref="productsGrid"
+                AllowAlternatingRows="true"
+                AllowFiltering="true"
+                AllowPaging="true"
+                Responsive="true"
+                PageSize="100"
+                AllowSorting="true"
+                EditMode="@editMode"
+                Data="@products"
+                TItem="ProductModel"
+                FilterMode="FilterMode.Simple"
+                RowUpdate="@OnUpdateRow"
+                RowCreate="@OnCreateRow"
+                Sort="@Reset" Page="@Reset" Filter="@Reset"
+                ColumnWidth="200px">
+    <Columns>
+        @* <RadzenDataGridColumn TItem="ProductModel" Property="Id" Title="ID" Width="120px" Frozen="true" /> *@
+        <RadzenDataGridColumn TItem="ProductModel" Property="Barcode" Title="Barkod" Width="240px" Frozen="true">
+            <EditTemplate Context="Product">
+                <RadzenTextBox @bind-Value="Product.Barcode" Style="width:200px; display: block" Name="Barkod" />
+                <RadzenRequiredValidator Text="Barkod zorunlu" Component="Barkod" Popup="true" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductModel" Property="Name" Title="İsim" Width="240px" Frozen="true">
+            <EditTemplate Context="Product">
+                <RadzenTextBox @bind-Value="Product.Name" Style="width:200px; display: block" Name="İsim" />
+                <RadzenRequiredValidator Text="İsim zorunlu" Component="İsim" Popup="true" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductModel" Property="Price" Title="Fiyat" Width="120px" Frozen="true">
+            <Template Context="Product">
+                @String.Format(new System.Globalization.CultureInfo("tr-TR"), "{0:C}", Product.Price)
+            </Template>
+            <EditTemplate Context="Product">
+                <RadzenNumeric @bind-Value="Product.Price" Style="width:100%" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Width="30%" TItem="ProductModel" Context="order" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+            <Template Context="order">
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => EditRow(order))" @onclick:stopPropagation="true">
+                </RadzenButton>
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => DeleteRow(order))" @onclick:stopPropagation="true">
+                </RadzenButton>
+            </Template>
+            <EditTemplate Context="order">
+                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@((args) => SaveRow(order))">
+                </RadzenButton>
+                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@((args) => CancelEdit(order))">
+                </RadzenButton>
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => DeleteRow(order))">
+                </RadzenButton>
+            </EditTemplate>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+</div>
+
+
+}
+
+@code {
+    RadzenDataGrid<ProductModel> productsGrid;
+    List<ProductModel> products = new();
+    DataGridEditMode editMode = DataGridEditMode.Single;
+    List<ProductModel> productsToInsert = new();
+    List<ProductModel> productsToUpdate = new();
+
+    private string jwt = string.Empty;
+    private bool isLogin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        try
+        {
+            jwt = await _localStorage.GetItemAsync<string>("jwt");
+
+            isLogin = Helper.isLogin(jwt);
+
+            if (!isLogin)
+            {
+                _toast.ShowError("Lütfen Giriş Yapınız :)");
+                _navigation.NavigateTo("/");
+                return;
+            }
+
+            var productData = await _productClient.GetAllProduct(jwt);
+
+            if (!productData.Status)
+            {
+                _toast.ShowWarning(productData.Message);
+                return;
+            }
+
+            var productList = JsonConvert.DeserializeObject<List<ProductModel>>(productData.Data);
+            if (productList is null || !productList.Any())
+            {
+                return;
+            }
+
+            products.AddRange(productList);
+
+        }
+        catch (Exception ex)
+        {
+            _toast.ShowError(ex.Message);
+            Console.WriteLine(ex.ToString());
+        }
+    }
+
+    void Reset()
+    {
+        productsToInsert.Clear();
+        productsToUpdate.Clear();
+    }
+
+    void Reset(ProductModel order)
+    {
+        productsToInsert.Remove(order);
+        productsToUpdate.Remove(order);
+    }
+
+    //düzenlemeyi aç
+    async Task EditRow(ProductModel item)
+    {
+        if (editMode == DataGridEditMode.Single && products.Count() > 0)
+        {
+            productsToInsert.Clear();
+        }
+
+        productsToUpdate.Add(item);
+        await productsGrid.EditRow(item);
+    }
+    //satır güncelleniyor
+    async Task OnUpdateRow(ProductModel item)
+    {
+        try
+        {
+            Reset(item);
+            // var oldProduct = products.FirstOrDefault(x=> x.Id == item.Id);
+            // if (oldProduct is null)
+            // throw new ArgumentNullException($"{nameof(oldProduct)} eski ürün ID'si hatalı.");
+
+            await _productClient.UpdateProduct(item.Id, item, jwt);
+        }
+        catch (Exception ex)
+        {
+            _toast.ShowError(ex.Message);
+            Console.WriteLine(ex.ToString());
+        }
+
+    }
+
+    //yeni ürün eklendi veya düzenlendi kayıt ediliyor
+    async Task SaveRow(ProductModel order)
+    {
+        await productsGrid.UpdateRow(order);
+        // products = await _productClient.GetAllProduct();
+        await productsGrid.RefreshDataAsync();
+    }
+
+
+    //sil
+    async Task DeleteRow(ProductModel item)
+    {
+        try
+        {
+            Reset(item);
+
+            if (products.Contains(item))
+            {
+                await _productClient.DeleteProduct(item.Barcode, jwt);
+                products.Remove(item);
+            }
+            else
+            {
+                productsGrid.CancelEditRow(item);
+            }
+            // products = await _productClient.GetAllProduct();
+            await productsGrid.RefreshDataAsync();
+            await productsGrid.Reload();
+            productsToInsert.Clear();
+        }
+        catch (Exception ex)
+        {
+            _toast.ShowError(ex.Message);
+            Console.WriteLine(ex.ToString());
+        }
+    }
+
+    //Yeni satır ekleme
+    async Task InsertRow()
+    {
+        if (editMode == DataGridEditMode.Single)
+        {
+            Reset();
+        }
+
+        var item = new ProductModel();
+        // productsToInsert.Add(item);
+        await productsGrid.InsertRow(item);
+    }
+    //Yeni ürün ekleme
+    async Task OnCreateRow(ProductModel item)
+    {
+        try
+        {
+            await _productClient.CreateProduct(item, jwt);
+            products.Add(item);
+            productsToInsert.Remove(item);
+            productsToInsert.Remove(item);
+        }
+        catch (Exception ex)
+        {
+            _toast.ShowError(ex.Message);
+            Console.WriteLine(ex.ToString());
+        }
+
+    }
+
+    //düzenlemeyi iptal et
+    void CancelEdit(ProductModel item)
+    {
+        Reset(item);
+
+        productsGrid.CancelEditRow(item);
+
+        // var orderEntry = dbContext.Entry(item);
+        // if (orderEntry.State == EntityState.Modified)
+        // {
+        //     orderEntry.CurrentValues.SetValues(orderEntry.OriginalValues);
+        //     orderEntry.State = EntityState.Unchanged;
+        // }
+    }
+}
+
+
+<style>
+    .rz-grid-table {
+        width: unset;
+    }
+</style>

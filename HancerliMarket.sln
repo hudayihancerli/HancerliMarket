@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34701.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HancerliMarket.Webapi", "HancerliMarket.Weapi\HancerliMarket.Webapi.csproj", "{0EB84E8C-8A70-4842-BF20-E2931FDC0F96}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HancerliMarket.DataModels", "HancerliMarket.DataModels\HancerliMarket.DataModels.csproj", "{1B8CEE81-FF9B-45D1-B84F-CD2B88C470E8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HancerliMarket.Services", "HancerliMarket.Services\HancerliMarket.Services.csproj", "{C08C40FF-307F-4B41-96FD-D27D9DEE87B7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HancerliMarket.Wasm", "HancerliMarket.Wasm\HancerliMarket.Wasm.csproj", "{F722B861-B03D-4F06-8B53-B7911606CF7A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0EB84E8C-8A70-4842-BF20-E2931FDC0F96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EB84E8C-8A70-4842-BF20-E2931FDC0F96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EB84E8C-8A70-4842-BF20-E2931FDC0F96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EB84E8C-8A70-4842-BF20-E2931FDC0F96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B8CEE81-FF9B-45D1-B84F-CD2B88C470E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B8CEE81-FF9B-45D1-B84F-CD2B88C470E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B8CEE81-FF9B-45D1-B84F-CD2B88C470E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B8CEE81-FF9B-45D1-B84F-CD2B88C470E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C08C40FF-307F-4B41-96FD-D27D9DEE87B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C08C40FF-307F-4B41-96FD-D27D9DEE87B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C08C40FF-307F-4B41-96FD-D27D9DEE87B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C08C40FF-307F-4B41-96FD-D27D9DEE87B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F722B861-B03D-4F06-8B53-B7911606CF7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F722B861-B03D-4F06-8B53-B7911606CF7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F722B861-B03D-4F06-8B53-B7911606CF7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F722B861-B03D-4F06-8B53-B7911606CF7A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {89DA0D81-D67E-452B-9E65-F61F4D7A0182}
+	EndGlobalSection
+EndGlobal

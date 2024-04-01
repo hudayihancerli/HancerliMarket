@@ -1,0 +1,85 @@
+﻿@page "/login"
+@using HancerliMarket.DataModels
+@using System.Text
+@using HancerliMarket.DataModels.Helper
+@using Newtonsoft.Json.Linq
+
+@layout BaseLayout
+@inject UserClient _userCLient
+@inject ILocalStorageService _localStorage
+@inject NavigationManager _navigation
+@inject IToastService _toast
+
+<PageTitle>Login</PageTitle>
+
+<div class="vh-100 vw-100 bg-light d-flex flex-column bg-dark align-items-center justify-content-center ">
+    <div class=" w-auto d-flex flex-column bg-dark align-items-center justif-content-center gap-2 rounded-1">
+        <RadzenTextBox Placeholder="Kullanıcı adı" Change=@(args => username = args) class="w-100" aria-label="Kullanıcı adı" />
+        <RadzenTextBox Placeholder="Şifre" Change=@(args => password = args) class="w-100" aria-label="Şifre" />
+        <RadzenButton Text="Giriş Yap" Click="async() => await LoginAuth()"></RadzenButton>
+    </div>
+</div>
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var jwt = await _localStorage.GetItemAsync<string>("jwt");
+
+        var islogin = Helper.isLogin(jwt);
+
+        if (islogin)
+        {
+            _navigation.NavigateTo("/basket");
+        }
+
+    }
+
+    private async Task LoginAuth()
+    {
+
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            _toast.ShowWarning("Lütfen tüm alanları doldurun.");
+            return;
+        }
+
+        var user = new UserModel()
+        {
+            Username = username,
+            Email = username,
+            Password = password
+        };
+
+        var userInfo =  await _userCLient.Login(user);
+
+        if (userInfo is null)
+        {
+            _toast.ShowWarning("Lütfen tekrar deneyiniz.");
+            return;
+        }
+
+       await _localStorage.SetItemAsync<string>("jwt", userInfo.AccesToken);
+
+        // Global.tokenModel.AccesToken = userInfo.AccesToken;
+        // Global.tokenModel.Refreshtoken = userInfo.Refreshtoken;
+        // Global.tokenModel.Expiretion= userInfo.Expiretion;
+
+        // Global.tokenModel = new()
+        // {
+        //     AccesToken = userInfo.AccesToken,
+        //     Refreshtoken = userInfo.Refreshtoken,
+        //     Expiretion = userInfo.Expiretion
+        // }; 
+        _toast.ShowSuccess("Giriş yapılıyor...");
+
+        _navigation.NavigateTo("/basket");
+    }
+
+   
+    
+}
