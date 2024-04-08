@@ -56,12 +56,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
 
-}
+//}
 
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
@@ -70,4 +70,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.Run(builder.Configuration.GetValue<string>("baseUrl", "127.0.0.1"));
+app.Run();
